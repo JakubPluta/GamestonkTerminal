@@ -9,7 +9,7 @@ from tabulate import tabulate
 from pycoingecko import CoinGeckoAPI
 from gamestonk_terminal.helper_funcs import (
     check_positive,
-    parse_known_args_and_warn,
+    parse_known_args_and_warn
 )
 
 import gamestonk_terminal.cryptocurrency.coingecko.pycoingecko_overview_model as gecko
