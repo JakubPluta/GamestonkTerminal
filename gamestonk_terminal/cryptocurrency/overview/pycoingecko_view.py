@@ -7,10 +7,7 @@ import textwrap
 from pandas.plotting import register_matplotlib_converters
 from tabulate import tabulate
 from pycoingecko import CoinGeckoAPI
-from gamestonk_terminal.helper_funcs import (
-    check_positive,
-    parse_known_args_and_warn
-)
+from gamestonk_terminal.helper_funcs import check_positive, parse_known_args_and_warn
 
 import gamestonk_terminal.cryptocurrency.coingecko.pycoingecko_overview_model as gecko
 
