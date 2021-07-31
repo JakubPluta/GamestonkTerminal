@@ -1,18 +1,19 @@
-import requests
 import pandas as pd
-from bs4 import BeautifulSoup
 from pycoingecko import CoinGeckoAPI
 from gamestonk_terminal.cryptocurrency.cryptocurrency_helpers import (
     wrap_text_in_df,
     percent_to_float,
     create_df_index,
 )
-from gamestonk_terminal.cryptocurrency.coingecko.pycoingecko_helpers import (
+from gamestonk_terminal.cryptocurrency.pycoingecko_helpers import (
     changes_parser,
     replace_qm,
     clean_row,
     collateral_auditors_parse,
     swap_columns,
+    scrape_gecko_data,
+    get_btc_price,
+    GECKO_BASE_URL,
 )
 
 PERIODS = {
@@ -63,51 +64,11 @@ COLUMNS = {
     "change_30d": "change_30d",
 }
 
-CHANNELS = {
-    "telegram_channel_identifier": "telegram",
-    "twitter_screen_name": "twitter",
-    "subreddit_url": "subreddit",
-    "bitcointalk_thread_identifier": "bitcointalk",
-    "facebook_username": "facebook",
-    "discord": "discord",
-}
-
-BASE_INFO = [
-    "id",
-    "name",
-    "symbol",
-    "asset_platform_id",
-    "description",
-    "contract_address",
-    "market_cap_rank",
-    "public_interest_score",
-]
-
-DENOMINATION = ("usd", "btc", "eth")
 
 client = CoinGeckoAPI()
 
-GECKO_BASE_URL = "https://www.coingecko.com"
 
-
-def scrape_gecko_data(url: str) -> BeautifulSoup:
-    """Helper method that scrape Coin Gecko site.
-
-    Parameters
-    ----------
-    url : str
-        coin gecko url to scrape e.g: "https://www.coingecko.com/en/discover"
-
-    Returns
-    -------
-        BeautifulSoup object
-    """
-
-    req = requests.get(url)
-    return BeautifulSoup(req.text, features="lxml")
-
-
-def get_gainers_or_losers(period="1h", typ="gainers"):
+def get_gainers_or_losers(period="1h", typ="gainers") -> pd.DataFrame:
     """Scrape data about top gainers - coins which gain the most in given period and
     top losers - coins that lost the most in given period of time.
 
@@ -160,23 +121,6 @@ def get_gainers_or_losers(period="1h", typ="gainers"):
     return df
 
 
-def get_btc_price():
-    """Get BTC/USD price from CoinGecko API
-
-    Returns
-    -------
-    str
-        latest bitcoin price in usd.
-    """
-    req = requests.get(
-        "https://api.coingecko.com/api/v3/simple/"
-        "price?ids=bitcoin&vs_currencies=usd&include_market_cap"
-        "=false&include_24hr_vol"
-        "=false&include_24hr_change=false&include_last_updated_at=false"
-    )
-    return req.json()["bitcoin"]["usd"]
-
-
 def discover_coins(category: str = "trending") -> pd.DataFrame:
     """Scrapes data from "https://www.coingecko.com/en/discover"
         - Most voted coins
@@ -223,7 +167,7 @@ def discover_coins(category: str = "trending") -> pd.DataFrame:
     )
 
 
-def get_recently_added_coins():
+def get_recently_added_coins() -> pd.DataFrame:
     """Scrape recently added coins on CoinGecko from "https://www.coingecko.com/en/coins/recently_added"
 
     Returns
@@ -267,7 +211,7 @@ def get_recently_added_coins():
     return df
 
 
-def get_yield_farms():
+def get_yield_farms() -> pd.DataFrame:
     """Scrapes yield farms data from "https://www.coingecko.com/en/yield-farming"
 
     Returns
@@ -328,7 +272,7 @@ def get_yield_farms():
     return df
 
 
-def get_top_volume_coins():
+def get_top_volume_coins() -> pd.DataFrame:
     """Scrapes top coins by trading volume "https://www.coingecko.com/en/coins/high_volume"
 
     Returns
@@ -362,7 +306,7 @@ def get_top_volume_coins():
     return df
 
 
-def get_top_defi_coins():
+def get_top_defi_coins() -> pd.DataFrame:
     """Scrapes top decentralized finance coins "https://www.coingecko.com/en/defi"
 
     Returns
@@ -409,7 +353,7 @@ def get_top_defi_coins():
     return df
 
 
-def get_top_dexes():
+def get_top_dexes() -> pd.DataFrame:
     """Scrapes top decentralized exchanges from "https://www.coingecko.com/en/dex"
 
     Returns
@@ -454,7 +398,7 @@ def get_top_dexes():
     return df.reset_index()
 
 
-def get_top_nfts():
+def get_top_nfts() -> pd.DataFrame:
     """Scrapes top nfts from "https://www.coingecko.com/en/nft"
 
     Returns
@@ -492,7 +436,7 @@ def get_top_nfts():
     return df
 
 
-def get_coin_list():
+def get_coin_list() -> pd.DataFrame:
     """Get list of coins available on CoinGecko
 
     Returns

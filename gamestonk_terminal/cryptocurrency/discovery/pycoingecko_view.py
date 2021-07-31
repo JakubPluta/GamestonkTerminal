@@ -1,4 +1,4 @@
-""" pycoingecko_api """
+""" discovery pycoingecko_view """
 __docformat__ = "numpy"
 
 import argparse
@@ -8,15 +8,11 @@ import difflib
 import pandas as pd
 from pandas.plotting import register_matplotlib_converters
 from tabulate import tabulate
-from pycoingecko import CoinGeckoAPI
 from gamestonk_terminal.helper_funcs import check_positive, parse_known_args_and_warn
-import gamestonk_terminal.cryptocurrency.discover.pycoingecko_model as gecko
+import gamestonk_terminal.cryptocurrency.discovery.pycoingecko_model as gecko
 
 register_matplotlib_converters()
 
-# Generate a list of valid coins to be checked against later
-cg_api = CoinGeckoAPI()
-coins = cg_api.get_coins()
 
 # pylint: disable=inconsistent-return-statements
 # pylint: disable=R0904, C0302

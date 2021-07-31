@@ -6,20 +6,15 @@ from typing import List
 from pandas.plotting import register_matplotlib_converters
 import matplotlib.pyplot as plt
 from tabulate import tabulate
-from pycoingecko import CoinGeckoAPI
 from gamestonk_terminal.helper_funcs import (
     parse_known_args_and_warn,
     plot_autoscale,
 )
 from gamestonk_terminal.config_plot import PLOT_DPI
-import gamestonk_terminal.cryptocurrency.coingecko.pycoingecko_coin_model as gecko_coin
+import gamestonk_terminal.cryptocurrency.due_dilligence.pycoingecko_model as gecko
 from gamestonk_terminal.cryptocurrency.cryptocurrency_helpers import wrap_text_in_df
 
 register_matplotlib_converters()
-
-# Generate a list of valid coins to be checked against later
-cg_api = CoinGeckoAPI()
-coins = cg_api.get_coins()
 
 # pylint: disable=inconsistent-return-statements
 # pylint: disable=R0904, C0302
@@ -63,7 +58,7 @@ def load(other_args: List[str]):
         if not ns_parser:
             return
 
-        coin = gecko_coin.Coin(ns_parser.coin)
+        coin = gecko.Coin(ns_parser.coin)
         print("")
         return coin
 
@@ -78,7 +73,7 @@ def load(other_args: List[str]):
         return None
 
 
-def chart(coin: gecko_coin.Coin, other_args: List[str]):
+def chart(coin: gecko.Coin, other_args: List[str]):
     """Plots chart for loaded cryptocurrency
 
     Parameters
@@ -133,7 +128,7 @@ def chart(coin: gecko_coin.Coin, other_args: List[str]):
         print(e, "\n")
 
 
-def ta(coin: gecko_coin.Coin, other_args: List[str]):
+def ta(coin: gecko.Coin, other_args: List[str]):
     """Load data for Technical Analysis
 
     Parameters
@@ -180,7 +175,7 @@ def ta(coin: gecko_coin.Coin, other_args: List[str]):
         return None, None
 
 
-def info(coin: gecko_coin.Coin, other_args: List[str]):
+def info(coin: gecko.Coin, other_args: List[str]):
     """Shows basic information about loaded coin
 
     Parameters
@@ -228,7 +223,7 @@ def info(coin: gecko_coin.Coin, other_args: List[str]):
         print(e, "\n")
 
 
-def web(coin: gecko_coin.Coin, other_args: List[str]):
+def web(coin: gecko.Coin, other_args: List[str]):
     """Shows found websites corresponding to loaded coin
 
     Parameters
@@ -271,7 +266,7 @@ def web(coin: gecko_coin.Coin, other_args: List[str]):
         print(e, "\n")
 
 
-def social(coin: gecko_coin.Coin, other_args: List[str]):
+def social(coin: gecko.Coin, other_args: List[str]):
     """Shows social media corresponding to loaded coin
 
     Parameters
@@ -313,7 +308,7 @@ def social(coin: gecko_coin.Coin, other_args: List[str]):
         print(e, "\n")
 
 
-def dev(coin: gecko_coin.Coin, other_args: List[str]):
+def dev(coin: gecko.Coin, other_args: List[str]):
     """Shows developers data for loaded coin
 
     Parameters
@@ -357,7 +352,7 @@ def dev(coin: gecko_coin.Coin, other_args: List[str]):
         print(e, "\n")
 
 
-def ath(coin: gecko_coin.Coin, other_args: List[str]):
+def ath(coin: gecko.Coin, other_args: List[str]):
     """Shows all time high data for loaded coin
 
     Parameters
@@ -402,7 +397,7 @@ def ath(coin: gecko_coin.Coin, other_args: List[str]):
         print(e, "\n")
 
 
-def atl(coin: gecko_coin.Coin, other_args: List[str]):
+def atl(coin: gecko.Coin, other_args: List[str]):
     """Shows all time low data for loaded coin
 
     Parameters
@@ -449,7 +444,7 @@ def atl(coin: gecko_coin.Coin, other_args: List[str]):
         print(e, "\n")
 
 
-def score(coin: gecko_coin.Coin, other_args: List[str]):
+def score(coin: gecko.Coin, other_args: List[str]):
     """Shows different kind of scores for loaded coin
 
     Parameters
@@ -499,7 +494,7 @@ def score(coin: gecko_coin.Coin, other_args: List[str]):
         print(e, "\n")
 
 
-def bc(coin: gecko_coin.Coin, other_args: List[str]):
+def bc(coin: gecko.Coin, other_args: List[str]):
     """Shows urls to blockchain explorers
 
     Parameters
@@ -544,7 +539,7 @@ def bc(coin: gecko_coin.Coin, other_args: List[str]):
         print(e, "\n")
 
 
-def market(coin: gecko_coin.Coin, other_args: List[str]):
+def market(coin: gecko.Coin, other_args: List[str]):
     """Shows market data for loaded coin
 
     Parameters

@@ -6,16 +6,11 @@ from typing import List
 import textwrap
 from pandas.plotting import register_matplotlib_converters
 from tabulate import tabulate
-from pycoingecko import CoinGeckoAPI
 from gamestonk_terminal.helper_funcs import check_positive, parse_known_args_and_warn
-
-import gamestonk_terminal.cryptocurrency.coingecko.pycoingecko_overview_model as gecko
+import gamestonk_terminal.cryptocurrency.overview.pycoingecko_model as gecko
+from gamestonk_terminal.cryptocurrency.discovery.pycoingecko_model import get_coin_list
 
 register_matplotlib_converters()
-
-# Generate a list of valid coins to be checked against later
-cg_api = CoinGeckoAPI()
-coins = cg_api.get_coins()
 
 # pylint: disable=inconsistent-return-statements
 # pylint: disable=R0904, C0302
@@ -419,7 +414,7 @@ def coin_list(other_args: List[str]):
         if not ns_parser:
             return
 
-        df = gecko.get_coin_list()
+        df = get_coin_list()
 
         letter = ns_parser.letter
         if letter and isinstance(letter, str):
@@ -430,7 +425,7 @@ def coin_list(other_args: List[str]):
         try:
             df = df[ns_parser.skip : ns_parser.skip + ns_parser.top]
         except Exception:
-            df = gecko.get_coin_list()
+            df = get_coin_list()
         print(
             tabulate(
                 df,

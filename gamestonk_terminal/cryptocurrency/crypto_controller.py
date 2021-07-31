@@ -11,7 +11,7 @@ from gamestonk_terminal.menu import session
 from gamestonk_terminal.cryptocurrency.coinmarketcap import coinmarketcap_controller
 from gamestonk_terminal.cryptocurrency.binance import binance_controller
 from gamestonk_terminal.cryptocurrency.coingecko import pycoingecko_controller
-from gamestonk_terminal.cryptocurrency import finbrain_crypto_view
+from gamestonk_terminal.cryptocurrency.due_dilligence import finbrain_crypto_view
 from gamestonk_terminal.cryptocurrency.coinpaprika import coinpaprika_controller
 
 

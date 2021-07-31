@@ -1,35 +1,18 @@
 import math
-import requests
 import pandas as pd
 import numpy as np
-from bs4 import BeautifulSoup
 from pycoingecko import CoinGeckoAPI
 from gamestonk_terminal.cryptocurrency.cryptocurrency_helpers import (
     wrap_text_in_df,
     create_df_index,
 )
-from gamestonk_terminal.cryptocurrency.coingecko.pycoingecko_helpers import (
+from gamestonk_terminal.cryptocurrency.pycoingecko_helpers import (
     replace_qm,
     clean_row,
+    scrape_gecko_data,
+    GECKO_BASE_URL,
 )
 
-PERIODS = {
-    "1h": "?time=h1",
-    "24h": "?time=h24",
-    "7d": "?time=d7",
-    "14d": "?time=d14",
-    "30d": "?time=d30",
-    "60d": "?time=d60",
-    "1y": "?time=y1",
-}
-
-CATEGORIES = {
-    "trending": 0,
-    "most_voted": 1,
-    "positive_sentiment": 2,
-    "recently_added": 3,
-    "most_visited": 4,
-}
 
 COLUMNS = {
     "id": "id",
@@ -61,48 +44,8 @@ COLUMNS = {
     "change_30d": "change_30d",
 }
 
-CHANNELS = {
-    "telegram_channel_identifier": "telegram",
-    "twitter_screen_name": "twitter",
-    "subreddit_url": "subreddit",
-    "bitcointalk_thread_identifier": "bitcointalk",
-    "facebook_username": "facebook",
-    "discord": "discord",
-}
-
-BASE_INFO = [
-    "id",
-    "name",
-    "symbol",
-    "asset_platform_id",
-    "description",
-    "contract_address",
-    "market_cap_rank",
-    "public_interest_score",
-]
-
-DENOMINATION = ("usd", "btc", "eth")
 
 client = CoinGeckoAPI()
-
-GECKO_BASE_URL = "https://www.coingecko.com"
-
-
-def scrape_gecko_data(url: str) -> BeautifulSoup:
-    """Helper method that scrape Coin Gecko site.
-
-    Parameters
-    ----------
-    url : str
-        coin gecko url to scrape e.g: "https://www.coingecko.com/en/discover"
-
-    Returns
-    -------
-        BeautifulSoup object
-    """
-
-    req = requests.get(url)
-    return BeautifulSoup(req.text, features="lxml")
 
 
 def get_holdings_overview(endpoint: str = "bitcoin"):
@@ -173,23 +116,6 @@ def get_companies_assets(endpoint="bitcoin"):
         ],
     )
     return df
-
-
-def get_btc_price():
-    """Get BTC/USD price from CoinGecko API
-
-    Returns
-    -------
-    str
-        latest bitcoin price in usd.
-    """
-    req = requests.get(
-        "https://api.coingecko.com/api/v3/simple/"
-        "price?ids=bitcoin&vs_currencies=usd&include_market_cap"
-        "=false&include_24hr_vol"
-        "=false&include_24hr_change=false&include_last_updated_at=false"
-    )
-    return req.json()["bitcoin"]["usd"]
 
 
 def get_news(n: int = 100) -> pd.DataFrame:
