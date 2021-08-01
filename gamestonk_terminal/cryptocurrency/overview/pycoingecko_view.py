@@ -77,7 +77,7 @@ def holdings_companies_list(other_args: List[str]):
 
     """
     parser = argparse.ArgumentParser(
-        prog="hold_comp",
+        prog="companies",
         add_help=False,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="""Track publicly traded companies around the world that
@@ -188,7 +188,7 @@ def nft_market_status(other_args: List[str]):
 
     """
     parser = argparse.ArgumentParser(
-        prog="nft_market",
+        prog="nft",
         add_help=False,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="""Shows NFT market status
@@ -228,7 +228,7 @@ def exchange_rates(other_args: List[str]):
         Arguments to pass to argparse
     """
     parser = argparse.ArgumentParser(
-        prog="ex_rates",
+        prog="exrates",
         add_help=False,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="""

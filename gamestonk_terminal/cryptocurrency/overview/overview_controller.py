@@ -26,20 +26,19 @@ class Controller:
         "cg_defi",
         "cg_news",
         "cg_stables",
-        "cg_nft_market",
+        "cg_nft",
         "cg_exchanges",
-        "cg_ex_rates",
+        "cg_exrates",
         "cg_platforms",
         "cg_products",
         "cg_indexes",
         "cg_derivatives",
         "cg_categories",
         "cg_hold",
-        "cg_hold_comp",
+        "cg_companies",
         "cp_global",
-        "cp_coins",
         "cp_markets",
-        "cp_ex_markets",
+        "cp_exmarkets",
         "cp_info",
         "cp_exchanges",
         "cp_platforms",
@@ -64,23 +63,22 @@ class Controller:
         print("")
         print("CoinGecko:")
         print("   cg_global          global crypto market info")
-        print("   cg_coins           coins available on CoinGecko")
+        print("   cg_news            last news available on CoinGecko")
         print("   cg_defi            global DeFi market info")
         print("   cg_stables         stablecoins")
-        print("   cg_nft_market      non fungible token market status")
+        print("   cg_nft             non fungible token market status")
         print("   cg_exchanges       top crypto exchanges")
-        print("   cg_ex_rates        coin exchange rates")
+        print("   cg_exrates         coin exchange rates")
         print("   cg_platforms       crypto financial platforms")
         print("   cg_products        crypto financial products")
         print("   cg_indexes         crypto indexes")
         print("   cg_derivatives     crypto derivatives")
         print("   cg_categories      crypto categories")
         print("   cg_hold            ethereum, bitcoin holdings overview statistics")
-        print("   cg_hold_comp       ethereum, bitcoin holdings by public companies")
+        print("   cg_companies       ethereum, bitcoin holdings by public companies")
         print("")
         print("CoinPaprika:")
         print("   cp_global          global crypto market info")
-        print("   cp_coins           coins available on CoinPaprika")
         print(
             "   cp_info            basic info about all coins available on CoinPaprika"
         )
@@ -88,7 +86,7 @@ class Controller:
             "   cp_markets         market related info about all coins available on CoinPaprika"
         )
         print("   cp_exchanges       list all exchanges")
-        print("   cp_ex_markets      all available markets on given exchange")
+        print("   cp_exmarkets       all available markets on given exchange")
         print(
             "   cp_platforms       list blockchain platforms eg. ethereum, solana, kusama, terra"
         )
@@ -147,8 +145,8 @@ class Controller:
         """Process hold command"""
         pycoingecko_view.holdings_overview(other_args)
 
-    def call_cg_hold_comp(self, other_args):
-        """Process hold_comp command"""
+    def call_cg_companies(self, other_args):
+        """Process companies command"""
         pycoingecko_view.holdings_companies_list(other_args)
 
     def call_cg_news(self, other_args):
@@ -163,13 +161,9 @@ class Controller:
         """Process stables command"""
         pycoingecko_view.stablecoins(other_args=other_args)
 
-    def call_cg_nft_market(self, other_args):
+    def call_cg_nft(self, other_args):
         """Process top_volume command"""
         pycoingecko_view.nft_market_status(other_args=other_args)
-
-    def call_cg_nft_today(self, other_args):
-        """Process nft_today command"""
-        pycoingecko_view.nft_of_the_day(other_args=other_args)
 
     def call_cg_products(self, other_args):
         """Process products command"""
@@ -183,7 +177,7 @@ class Controller:
         """Process exchanges command"""
         pycoingecko_view.exchanges(other_args=other_args)
 
-    def call_cg_ex_rates(self, other_args):
+    def call_cg_exrates(self, other_args):
         """Process exchange_rates command"""
         pycoingecko_view.exchange_rates(other_args=other_args)
 
@@ -203,23 +197,15 @@ class Controller:
         """Process defi command"""
         pycoingecko_view.global_defi_info(other_args=other_args)
 
-    def call_cg_coins(self, other_args):
-        """Process coins command"""
-        pycoingecko_view.coin_list(other_args=other_args)
-
     def call_cp_global(self, other_args):
         """Process global command"""
         coinpaprika_view.global_market(other_args=other_args)
-
-    def call_cp_coins(self, other_args):
-        """Process coins command"""
-        coinpaprika_view.coins(other_args=other_args)
 
     def call_cp_markets(self, other_args):
         """Process markets command"""
         coinpaprika_view.all_coins_market_info(other_args=other_args)
 
-    def call_cp_ex_markets(self, other_args):
+    def call_cp_exmarkets(self, other_args):
         """Process ex_markets command"""
         coinpaprika_view.exchange_markets(other_args=other_args)
 
@@ -251,11 +237,11 @@ def menu():
                 {c: None for c in controller.CHOICES}
             )
             an_input = session.prompt(
-                f"{get_flair()} (crypto)>(cg)> ",
+                f"{get_flair()} (crypto)>(ov)> ",
                 completer=completer,
             )
         else:
-            an_input = input(f"{get_flair()} (crypto)>(cg)> ")
+            an_input = input(f"{get_flair()} (crypto)>(ov)> ")
 
         try:
             process_input = controller.switch(an_input)
