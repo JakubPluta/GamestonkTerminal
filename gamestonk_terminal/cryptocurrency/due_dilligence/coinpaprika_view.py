@@ -1,9 +1,9 @@
 """CoinPaprika View"""
 __docformat__ = "numpy"
-
 import argparse
 from typing import List
 import difflib
+from json.decoder import JSONDecodeError
 from tabulate import tabulate
 from pandas.plotting import register_matplotlib_converters
 import matplotlib.pyplot as plt
@@ -27,53 +27,56 @@ register_matplotlib_converters()
 # pylint: disable=inconsistent-return-statements
 # pylint: disable=C0302, too-many-lines
 
-CURRENCIES = [
-    "BTC",
-    "ETH",
-    "USD",
-    "EUR",
-    "PLN",
-    "KRW",
-    "GBP",
-    "CAD",
-    "JPY",
-    "RUB",
-    "TRY",
-    "NZD",
-    "AUD",
-    "CHF",
-    "UAH",
-    "HKD",
-    "SGD",
-    "NGN",
-    "PHP",
-    "MXN",
-    "BRL",
-    "THB",
-    "CLP",
-    "CNY",
-    "CZK",
-    "DKK",
-    "HUF",
-    "IDR",
-    "ILS",
-    "INR",
-    "MYR",
-    "NOK",
-    "PKR",
-    "SEK",
-    "TWD",
-    "ZAR",
-    "VND",
-    "BOB",
-    "COP",
-    "PEN",
-    "ARS",
-    "ISK",
-]
-PLATFORMS = get_all_contract_platforms()["platform_id"].tolist()
-COINS = get_list_of_coins()
-COINS_DCT = dict(zip(COINS.id, COINS.symbol))
+try:
+    CURRENCIES = [
+        "BTC",
+        "ETH",
+        "USD",
+        "EUR",
+        "PLN",
+        "KRW",
+        "GBP",
+        "CAD",
+        "JPY",
+        "RUB",
+        "TRY",
+        "NZD",
+        "AUD",
+        "CHF",
+        "UAH",
+        "HKD",
+        "SGD",
+        "NGN",
+        "PHP",
+        "MXN",
+        "BRL",
+        "THB",
+        "CLP",
+        "CNY",
+        "CZK",
+        "DKK",
+        "HUF",
+        "IDR",
+        "ILS",
+        "INR",
+        "MYR",
+        "NOK",
+        "PKR",
+        "SEK",
+        "TWD",
+        "ZAR",
+        "VND",
+        "BOB",
+        "COP",
+        "PEN",
+        "ARS",
+        "ISK",
+    ]
+    PLATFORMS = get_all_contract_platforms()["platform_id"].tolist()
+    COINS = get_list_of_coins()
+    COINS_DCT = dict(zip(COINS.id, COINS.symbol))
+except JSONDecodeError as e:
+    print(e)
 
 
 def coins(other_args: List[str]):

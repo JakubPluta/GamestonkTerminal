@@ -4,15 +4,21 @@ __docformat__ = "numpy"
 import argparse
 import os
 import matplotlib.pyplot as plt
+import pandas as pd
 from prompt_toolkit.completion import NestedCompleter
 from gamestonk_terminal import feature_flags as gtff
 from gamestonk_terminal.helper_funcs import get_flair
 from gamestonk_terminal.menu import session
-from gamestonk_terminal.cryptocurrency.coinmarketcap import coinmarketcap_controller
-from gamestonk_terminal.cryptocurrency.binance import binance_controller
-from gamestonk_terminal.cryptocurrency.coingecko import pycoingecko_controller
-from gamestonk_terminal.cryptocurrency.due_dilligence import finbrain_crypto_view
-from gamestonk_terminal.cryptocurrency.coinpaprika import coinpaprika_controller
+from gamestonk_terminal.cryptocurrency.overview import overview_controller
+from gamestonk_terminal.cryptocurrency.due_dilligence import dd_controller
+from gamestonk_terminal.cryptocurrency.discovery import discovery_controller
+from gamestonk_terminal.cryptocurrency.due_dilligence import (
+    pycoingecko_view,
+    coinpaprika_view,
+    binance_model,
+)
+
+from gamestonk_terminal.cryptocurrency import load
 
 
 class CryptoController:
@@ -23,11 +29,13 @@ class CryptoController:
         "help",
         "q",
         "quit",
-        "cg",
-        "bin",
-        "cmc",
-        "finbrain",
-        "cp",
+        "ta",
+        "load",
+        "clear",
+        "chart",
+        "dd",
+        "ov",
+        "disc",
     ]
 
     def __init__(self):
@@ -35,6 +43,11 @@ class CryptoController:
 
         self.crypto_parser = argparse.ArgumentParser(add_help=False, prog="crypto")
         self.crypto_parser.add_argument("cmd", choices=self.CHOICES)
+
+        self.current_coin = None
+        self.current_df = pd.DataFrame()
+        self.current_currency = None
+        self.source = ""
 
     def print_help(self):
         """Print help"""
@@ -46,13 +59,18 @@ class CryptoController:
         print("   ?/help          show this menu again")
         print("   q               quit this menu, and shows back to main menu")
         print("   quit            quit to abandon program")
-        print("")
         print("   finbrain        Crypto sentiment from 15+ major news headlines")
         print("")
-        print(">  cg              CoinGecko overview (market statistics) and coin menu")
-        print(">  cmc             Coinmarketcap menu")
-        print(">  bin             Binance menu with order book, candles, ta.. ")
-        print(">  cp              CoinPaprika menu")
+        print(f"Loaded coin: {self.current_coin}")
+        print("")
+        print(">  ov              Coinmarketcap menu")
+        print(">  disc            Binance menu with order book, candles, ta.. ")
+
+        if self.current_coin:
+            print(">  dd              CoinPaprika menu")
+            print(">  ta")
+            print(">  chart")
+
         print("")
 
     def switch(self, an_input: str):
@@ -99,31 +117,62 @@ class CryptoController:
         """Process Quit command - quit the program"""
         return True
 
-    def call_cg(self, _):
-        if pycoingecko_controller.menu():
-            return True
-        print("")
+    def call_load(self, other_args):
+        """Process load command"""
+        try:
+            (
+                self.current_coin,
+                self.current_currency,
+                self.current_df,
+                self.source,
+            ) = load(other_args)
+            print(f"Loaded coin {self.current_coin}\n")
+        except TypeError:
+            print("Couldn't load data\n")
 
-    def call_bin(self, _):
-        """Process bin command"""
-        if binance_controller.menu():
-            return True
-        print("")
+    def call_chart(self, other_args):
+        """Process view command"""
+        if self.current_coin:
+            if self.source == "cg":
+                pycoingecko_view.chart(self.current_coin, other_args)
+            elif self.source == "bin":
+                binance_model.show_candles(
+                    self.current_df, self.current_coin, self.current_currency
+                )
+            elif self.source == "cp":
+                coinpaprika_view.chart(self.current_coin, other_args)
+        else:
+            print("No coin selected. Use 'load' to load the coin you want to look at.")
+            print("")
 
-    def call_cmc(self, _):
-        """Process top command"""
-        if coinmarketcap_controller.menu():
-            return True
-        print("")
+    def call_clear(self, _):
+        """Process clear command"""
+        if self.current_coin:
+            print(
+                f"Current coin {self.current_coin} was removed. You can load new coin with load -c <coin>"
+            )
+            print("")
+            self.current_coin = None
+            self.current_currency = None
+            self.current_df = pd.DataFrame()
+        else:
+            print("No coin selected. Use 'load' to load the coin you want to look at.")
+            print("")
 
-    def call_finbrain(self, other_args):
-        """Process sentiment command"""
-        finbrain_crypto_view.crypto_sentiment_analysis(other_args=other_args)
+    def call_disc(self, _):
+        """Process disc command"""
+        return discovery_controller.menu()
 
-    def call_cp(self, _):
-        """Process cp command"""
-        if coinpaprika_controller.menu():
-            return True
+    def call_ov(self, _):
+        """Process disc command"""
+        return overview_controller.menu()
+
+    def call_dd(self, _):
+        """Process dd command"""
+        if self.current_coin:
+            return dd_controller.menu(self.current_coin, self.source)
+
+        print("No coin selected. Use 'load' to load the coin you want to look at.")
         print("")
 
 

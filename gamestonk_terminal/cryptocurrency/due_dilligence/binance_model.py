@@ -12,7 +12,7 @@ from tabulate import tabulate
 from gamestonk_terminal.helper_funcs import check_positive
 from gamestonk_terminal.main_helper import parse_known_args_and_warn
 import gamestonk_terminal.config_terminal as cfg
-from gamestonk_terminal.cryptocurrency.binance.binance_view import (
+from gamestonk_terminal.cryptocurrency.due_dilligence.binance_view import (
     plot_order_book,
     plot_candles,
 )
@@ -28,6 +28,24 @@ def check_valid_binance_str(symbol: str) -> str:
         raise argparse.ArgumentTypeError(
             f"{symbol} is not a valid binance symbol"
         ) from e
+
+
+def get_all_binance_pairs() -> list:
+    client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
+    pairs = client.get_all_tickers()
+    symbols = [p["symbol"] for p in pairs]
+    return symbols
+
+
+def get_binance_exchange_info() -> dict:
+    client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
+    ex_info = client.get_exchange_info()["symbols"]
+    symbols = {
+        p["symbol"]: {p["baseAsset"]: p["quoteAsset"]}
+        for p in ex_info
+        if p["status"] == "TRADING"
+    }
+    return symbols
 
 
 def select_binance_coin(other_args: List[str]) -> Tuple[str, str, pd.DataFrame]:
