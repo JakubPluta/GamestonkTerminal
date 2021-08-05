@@ -3,7 +3,8 @@ __docformat__ = "numpy"
 
 import argparse
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
+from collections import defaultdict
 import pandas as pd
 import numpy as np
 from binance.client import Client
@@ -18,6 +19,41 @@ from gamestonk_terminal.cryptocurrency.due_dilligence.binance_view import (
 )
 
 
+def _get_all_binance_pairs() -> list:
+    """Helper methods that returns all available pairs on Binance in format
+    ["EOSETH", "ETHBTC", ....]
+
+    Returns
+    -------
+    list:
+        ["EOSETH", "ETHBTC", ....]
+
+    """
+    client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
+    pairs = client.get_all_tickers()
+    symbols = [p["symbol"] for p in pairs]
+    return symbols
+
+
+def _get_binance_available_pairs() -> dict:
+    """Helper methods that for every coin available on Binance add all quote assets.
+
+    Returns
+    -------
+    dict:
+        {'ETH' : ['BTC', 'USDT' ...], 'UNI' : ['ETH', 'BTC','BUSD', ...]
+
+    """
+    client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
+    ex_info = client.get_exchange_info()["symbols"]
+    trading_pairs = [p for p in ex_info if p["status"] == "TRADING"]
+
+    results = defaultdict(list)
+    for pair in trading_pairs:
+        results[pair["baseAsset"]].append(pair["quoteAsset"])
+    return results
+
+
 def check_valid_binance_str(symbol: str) -> str:
     """Check if symbol is in defined binance"""
     client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
@@ -30,135 +66,34 @@ def check_valid_binance_str(symbol: str) -> str:
         ) from e
 
 
-def get_all_binance_pairs() -> list:
-    client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
-    pairs = client.get_all_tickers()
-    symbols = [p["symbol"] for p in pairs]
-    return symbols
-
-
-def get_binance_exchange_info() -> dict:
-    client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
-    ex_info = client.get_exchange_info()["symbols"]
-    symbols = {
-        p["symbol"]: {p["baseAsset"]: p["quoteAsset"]}
-        for p in ex_info
-        if p["status"] == "TRADING"
-    }
-    return symbols
-
-
-def select_binance_coin(other_args: List[str]) -> Tuple[str, str, pd.DataFrame]:
-    """Define current_coin from binance
+def show_available_pairs_for_given_symbol(
+    symbol: str = "ETH",
+) -> Tuple[Union[str, None], list]:
+    """Return all available quoted assets for given symbol.
 
     Parameters
     ----------
-    other_args : List[str]
-        Argparse arguments
+    symbol:
+        Uppercase symbol of coin e.g BTC, ETH, UNI, LUNA, DOT ...
 
     Returns
     -------
-    str
-        Coin that is defined on binance
-    str
-        Base pair of coin
-    pd.DataFrame
-        Dataframe of prices for selected coin
+    str:
+        Coin symbol
+    list:
+        Quoted assets for given symbol: ["BTC", "USDT" , "BUSD"]
     """
-    client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
-    parser = argparse.ArgumentParser(
-        prog="load",
-        add_help=False,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description="Define the coin to be used from binance and get data",
-    )
-    parser.add_argument(
-        "-c", "--coin", help="Coin to get", dest="coin", type=str, default="BTC"
-    )
-    parser.add_argument(
-        "-q",
-        "--quote",
-        help="Quote currency (what to view coin vs)",
-        dest="quote",
-        type=str,
-        default="USDT",
-    )
-    interval_map = {
-        "1day": client.KLINE_INTERVAL_1DAY,
-        "3day": client.KLINE_INTERVAL_3DAY,
-        "1hour": client.KLINE_INTERVAL_1HOUR,
-        "2hour": client.KLINE_INTERVAL_2HOUR,
-        "4hour": client.KLINE_INTERVAL_4HOUR,
-        "6hour": client.KLINE_INTERVAL_6HOUR,
-        "8hour": client.KLINE_INTERVAL_8HOUR,
-        "12hour": client.KLINE_INTERVAL_12HOUR,
-        "1week": client.KLINE_INTERVAL_1WEEK,
-        "1min": client.KLINE_INTERVAL_1MINUTE,
-        "3min": client.KLINE_INTERVAL_3MINUTE,
-        "5min": client.KLINE_INTERVAL_5MINUTE,
-        "15min": client.KLINE_INTERVAL_15MINUTE,
-        "30min": client.KLINE_INTERVAL_30MINUTE,
-        "1month": client.KLINE_INTERVAL_1MONTH,
-    }
-    parser.add_argument(
-        "-i",
-        "--interval",
-        help="Interval to get data",
-        choices=list(interval_map.keys()),
-        dest="interval",
-        default="1day",
-        type=str,
-    )
-    parser.add_argument(
-        "-l",
-        "--limit",
-        dest="limit",
-        default=100,
-        help="Number to get",
-        type=check_positive,
-    )
-    try:
-        if other_args:
-            if "-" not in other_args[0]:
-                other_args.insert(0, "-c")
-        ns_parser = parse_known_args_and_warn(parser, other_args)
 
-        if not ns_parser:
-            return "", "", pd.DataFrame()
-
-        coin = ns_parser.coin + ns_parser.quote
-
-        if check_valid_binance_str(coin):
-            print(f"{ns_parser.coin.upper()} loaded vs {ns_parser.quote.upper()}")
-
-            candles = client.get_klines(
-                symbol=coin.upper(),
-                interval=interval_map[ns_parser.interval],
-                limit=ns_parser.limit,
-            )
-            candles_df = pd.DataFrame(candles).astype(float).iloc[:, :6]
-
-            candles_df.columns = [
-                "Time0",
-                "Open",
-                "High",
-                "Low",
-                "Close",
-                "Volume",
-            ]
-            df_coin = candles_df.set_index(
-                pd.to_datetime(candles_df["Time0"], unit="ms")
-            ).drop("Time0", axis=1)
-
-            return ns_parser.coin.upper(), ns_parser.quote.upper(), df_coin
-        return "", "", pd.DataFrame
-
-    except Exception as e:
-        print(e, "\n")
-        return "", "", pd.DataFrame
+    symbol_upper = symbol.upper()
+    pairs = _get_binance_available_pairs()
+    for k, v in pairs.items():
+        if k == symbol_upper:
+            return k, v
+    print(f"Couldn't find anything for symbol {symbol_upper}")
+    return None, []
 
 
-def order_book(other_args: List[str], coin: str, currency: str):
+def order_book(other_args: List[str], coin: str) -> None:
     """Get order book for currency
 
     Parameters
@@ -167,10 +102,11 @@ def order_book(other_args: List[str], coin: str, currency: str):
         Argparse arguments
     coin: str
         Coin to get symbol of
-    currency : str
-        Currency against which to check symbol
+
     """
     limit_list = [5, 10, 20, 50, 100, 500, 1000, 5000]
+    _, quotes = show_available_pairs_for_given_symbol(coin)
+
     parser = argparse.ArgumentParser(
         prog="book",
         add_help=False,
@@ -187,18 +123,25 @@ def order_book(other_args: List[str], coin: str, currency: str):
         choices=limit_list,
     )
 
-    try:
-        if not coin or not currency:
-            print("Coin needs to be selected prior to this command\n")
-            return
+    parser.add_argument(
+        "--vs",
+        help="Quote currency (what to view coin vs)",
+        dest="vs",
+        type=str,
+        default="USDT",
+        choices=quotes,
+    )
 
-        coin += currency
+    try:
 
         ns_parser = parse_known_args_and_warn(parser, other_args)
         if not ns_parser:
             return
+
+        pair = coin + ns_parser.vs
+
         client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
-        market_book = client.get_order_book(symbol=coin, limit=ns_parser.limit)
+        market_book = client.get_order_book(symbol=pair, limit=ns_parser.limit)
         bids = np.asarray(market_book["bids"], dtype=float)
         asks = np.asarray(market_book["asks"], dtype=float)
         bids = np.insert(bids, 2, bids[:, 1].cumsum(), axis=1)
@@ -209,36 +152,46 @@ def order_book(other_args: List[str], coin: str, currency: str):
         print(e, "\n")
 
 
-def show_candles(candles_df: pd.DataFrame, coin: str, currency: str):
-    """Show candles
-
-    Parameters
-    ----------
-    candles_df: pd.DataFrame
-        Dataframe of prices
-    coin: str
-        Coin loaded
-    currency : str
-        Currency loaded
-    """
-    plot_candles(
-        candles_df,
-        f"{coin+currency} from {candles_df.index[0].strftime('%Y/%m/%d')} to "
-        f"{candles_df.index[-1].strftime('%Y/%m/%d')}",
-    )
-
-
-def balance(coin: str):
+def balance(other_args: List[str], coin: str) -> None:
     """Get account holdings for asset
 
     Parameters
     ----------
+    other_args: List[str]
+        Argparse arguments
     coin: str
-        Coin to get holdings of
+        Coin to get symbol of
+
     """
-    client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
+
+    _, quotes = show_available_pairs_for_given_symbol(coin)
+
+    parser = argparse.ArgumentParser(
+        prog="balance",
+        add_help=False,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Chart",
+    )
+
+    parser.add_argument(
+        "--vs",
+        help="Quote currency (what to view coin vs)",
+        dest="vs",
+        type=str,
+        default="USDT",
+        choices=quotes,
+    )
+
     try:
-        current_balance = client.get_asset_balance(asset=coin)
+        ns_parser = parse_known_args_and_warn(parser, other_args)
+
+        if not ns_parser:
+            return
+
+        client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
+
+        pair = coin + ns_parser.vs
+        current_balance = client.get_asset_balance(asset=pair)
         if current_balance is None:
             print("Check loaded coin")
             return
@@ -256,3 +209,283 @@ def balance(coin: str):
 
     except Exception as e:
         print(e, "\n")
+
+
+def load(other_args: List[str]) -> Union[str, None]:
+    """Define current_coin from binance
+
+    Parameters
+    ----------
+    other_args : List[str]
+        Argparse arguments
+
+    Returns
+    -------
+    str
+        Coin that is defined on binance
+
+    """
+    parser = argparse.ArgumentParser(
+        prog="load",
+        add_help=False,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Define the coin to be used from binance and get data",
+    )
+    parser.add_argument(
+        "-c", "--coin", help="Coin to get", dest="coin", type=str, default="BTC"
+    )
+
+    try:
+        if other_args:
+            if "-" not in other_args[0]:
+                other_args.insert(0, "-c")
+        ns_parser = parse_known_args_and_warn(parser, other_args)
+
+        if not ns_parser:
+            return None
+
+        parsed_coin = ns_parser.coin.upper()
+
+        coin, pairs = show_available_pairs_for_given_symbol(parsed_coin)
+        if len(pairs) > 0:
+            print(f"Coin found {coin}\n")
+            return coin
+
+        print(f"Couldn't find coin with symbol {coin}\n")
+        return None
+
+    except Exception as e:
+        print(e, "\n")
+        return None
+
+
+def chart(coin: str, other_args: List[str]) -> Tuple[str, str, pd.DataFrame]:
+    """Define current_coin from binance
+
+    Parameters
+    ----------
+    coin: str
+        Coin that is defined on binance
+    other_args : List[str]
+        Argparse arguments
+
+    Returns
+    -------
+    str
+        Coin that is defined on binance
+    str
+        Base pair of coin
+    pd.DataFrame
+        Dataframe of prices for selected coin
+    """
+
+    client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
+
+    interval_map = {
+        "1day": client.KLINE_INTERVAL_1DAY,
+        "3day": client.KLINE_INTERVAL_3DAY,
+        "1hour": client.KLINE_INTERVAL_1HOUR,
+        "2hour": client.KLINE_INTERVAL_2HOUR,
+        "4hour": client.KLINE_INTERVAL_4HOUR,
+        "6hour": client.KLINE_INTERVAL_6HOUR,
+        "8hour": client.KLINE_INTERVAL_8HOUR,
+        "12hour": client.KLINE_INTERVAL_12HOUR,
+        "1week": client.KLINE_INTERVAL_1WEEK,
+        "1min": client.KLINE_INTERVAL_1MINUTE,
+        "3min": client.KLINE_INTERVAL_3MINUTE,
+        "5min": client.KLINE_INTERVAL_5MINUTE,
+        "15min": client.KLINE_INTERVAL_15MINUTE,
+        "30min": client.KLINE_INTERVAL_30MINUTE,
+        "1month": client.KLINE_INTERVAL_1MONTH,
+    }
+
+    _, quotes = show_available_pairs_for_given_symbol(coin)
+
+    parser = argparse.ArgumentParser(
+        prog="chart",
+        add_help=False,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Chart",
+    )
+
+    parser.add_argument(
+        "--vs",
+        help="Quote currency (what to view coin vs)",
+        dest="vs",
+        type=str,
+        default="USDT",
+        choices=quotes,
+    )
+
+    parser.add_argument(
+        "-i",
+        "--interval",
+        help="Interval to get data",
+        choices=list(interval_map.keys()),
+        dest="interval",
+        default="1day",
+        type=str,
+    )
+    parser.add_argument(
+        "-l",
+        "--limit",
+        dest="limit",
+        default=100,
+        help="Number to get",
+        type=check_positive,
+    )
+
+    try:
+        ns_parser = parse_known_args_and_warn(parser, other_args)
+
+        if not ns_parser:
+            return "", "", pd.DataFrame()
+
+        pair = coin + ns_parser.vs
+
+        if check_valid_binance_str(pair):
+            print(f"{coin} loaded vs {ns_parser.vs.upper()}")
+
+            candles = client.get_klines(
+                symbol=pair,
+                interval=interval_map[ns_parser.interval],
+                limit=ns_parser.limit,
+            )
+            candles_df = pd.DataFrame(candles).astype(float).iloc[:, :6]
+            candles_df.columns = [
+                "Time0",
+                "Open",
+                "High",
+                "Low",
+                "Close",
+                "Volume",
+            ]
+            df_coin = candles_df.set_index(
+                pd.to_datetime(candles_df["Time0"], unit="ms")
+            ).drop("Time0", axis=1)
+
+            plot_candles(
+                df_coin,
+                f"{coin + ns_parser.vs} from {df_coin.index[0].strftime('%Y/%m/%d')} to "
+                f"{df_coin.index[-1].strftime('%Y/%m/%d')}",
+            )
+
+            return coin.upper(), ns_parser.vs.upper(), df_coin
+        return coin.upper(), ns_parser.vs.upper(), pd.DataFrame()
+
+    except Exception as e:
+        print(e, "\n")
+        return "", "", pd.DataFrame()
+
+
+def ta(coin: str, other_args: List[str]) -> Tuple[str, str, pd.DataFrame]:
+    """Define current_coin from binance
+
+    Parameters
+    ----------
+    coin: str
+        Coin that is defined on binance
+    other_args : List[str]
+        Argparse arguments
+
+    Returns
+    -------
+    str
+        Coin that is defined on binance
+    str
+        Base pair of coin
+    pd.DataFrame
+        Dataframe of prices for selected coin
+    """
+
+    client = Client(cfg.API_BINANCE_KEY, cfg.API_BINANCE_SECRET)
+
+    interval_map = {
+        "1day": client.KLINE_INTERVAL_1DAY,
+        "3day": client.KLINE_INTERVAL_3DAY,
+        "1hour": client.KLINE_INTERVAL_1HOUR,
+        "2hour": client.KLINE_INTERVAL_2HOUR,
+        "4hour": client.KLINE_INTERVAL_4HOUR,
+        "6hour": client.KLINE_INTERVAL_6HOUR,
+        "8hour": client.KLINE_INTERVAL_8HOUR,
+        "12hour": client.KLINE_INTERVAL_12HOUR,
+        "1week": client.KLINE_INTERVAL_1WEEK,
+        "1min": client.KLINE_INTERVAL_1MINUTE,
+        "3min": client.KLINE_INTERVAL_3MINUTE,
+        "5min": client.KLINE_INTERVAL_5MINUTE,
+        "15min": client.KLINE_INTERVAL_15MINUTE,
+        "30min": client.KLINE_INTERVAL_30MINUTE,
+        "1month": client.KLINE_INTERVAL_1MONTH,
+    }
+
+    _, quotes = show_available_pairs_for_given_symbol(coin)
+
+    parser = argparse.ArgumentParser(
+        prog="ta",
+        add_help=False,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Chart",
+    )
+
+    parser.add_argument(
+        "--vs",
+        help="Quote currency (what to view coin vs)",
+        dest="vs",
+        type=str,
+        default="USDT",
+        choices=quotes,
+    )
+
+    parser.add_argument(
+        "-i",
+        "--interval",
+        help="Interval to get data",
+        choices=list(interval_map.keys()),
+        dest="interval",
+        default="1day",
+        type=str,
+    )
+    parser.add_argument(
+        "-l",
+        "--limit",
+        dest="limit",
+        default=100,
+        help="Number to get",
+        type=check_positive,
+    )
+
+    try:
+        ns_parser = parse_known_args_and_warn(parser, other_args)
+
+        if not ns_parser:
+            return coin, "", pd.DataFrame()
+
+        pair = coin + ns_parser.vs
+
+        if check_valid_binance_str(pair):
+            print(f"{coin} loaded vs {ns_parser.vs.upper()}")
+
+            candles = client.get_klines(
+                symbol=pair,
+                interval=interval_map[ns_parser.interval],
+                limit=ns_parser.limit,
+            )
+            candles_df = pd.DataFrame(candles).astype(float).iloc[:, :6]
+            candles_df.columns = [
+                "Time0",
+                "Open",
+                "High",
+                "Low",
+                "Close",
+                "Volume",
+            ]
+            df_coin = candles_df.set_index(
+                pd.to_datetime(candles_df["Time0"], unit="ms")
+            ).drop("Time0", axis=1)
+
+            return coin.upper(), ns_parser.vs.upper(), df_coin
+        return coin.upper(), ns_parser.vs.upper(), pd.DataFrame()
+
+    except Exception as e:
+        print(e, "\n")
+        return coin, "", pd.DataFrame()

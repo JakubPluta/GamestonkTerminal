@@ -6,7 +6,7 @@ from gamestonk_terminal.cryptocurrency.due_dilligence import coinpaprika_view as
 from gamestonk_terminal.cryptocurrency.due_dilligence import binance_model as binance
 
 
-def load(other_args: List[str]) -> Tuple[Any, Any, Any, Any]:
+def load(other_args: List[str]) -> Tuple[Any, Any]:
 
     parser = argparse.ArgumentParser(
         add_help=False,
@@ -42,35 +42,30 @@ def load(other_args: List[str]) -> Tuple[Any, Any, Any, Any]:
         ns_parser = parse_known_args_and_warn(parser, other_args)
 
         if not ns_parser:
-            return None, None, None, None
+            return "", None
 
-        current_coin = None  # type: Optional[Any]
+        current_coin = ""  # type: Optional[Any]
 
         if ns_parser.source == "cg":
             current_coin = gecko.Coin(ns_parser.coin)
-            print("")
-            return current_coin, None, None, ns_parser.source
+            return current_coin, ns_parser.source
 
         if ns_parser.source == "bin":
-            current_coin, current_currency, current_df = binance.select_binance_coin(
-                other_args
-            )
-            print("")
-            return current_coin, current_currency, current_df, ns_parser.source
+            current_coin = binance.load(other_args)
+            return current_coin, ns_parser.source
 
         if ns_parser.source == "cp":
             current_coin = paprika.load(other_args)
-            print("")
-            return current_coin, None, None, ns_parser.source
+            return current_coin, ns_parser.source
 
-        return current_coin, None, None, None
+        return current_coin, None
 
     except KeyError:
-        print(f"Could not find coin with the id: {ns_parser.coin}", "\n")
-        return None, None, None, None
+        print(f"Could not find coin: {ns_parser.coin}", "\n")
+        return "", None
     except SystemExit:
         print("")
-        return None, None, None, None
+        return "", None
     except Exception as e:
         print(e, "\n")
-        return None, None, None, None
+        return "", None

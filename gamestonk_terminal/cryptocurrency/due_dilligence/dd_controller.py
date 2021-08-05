@@ -3,7 +3,6 @@ __docformat__ = "numpy"
 # pylint: disable=R0904, C0302, W0622
 import argparse
 import os
-from typing import Any
 import pandas as pd
 from prompt_toolkit.completion import NestedCompleter
 from gamestonk_terminal import feature_flags as gtff
@@ -25,38 +24,38 @@ class Controller:
         "help",
         "q",
         "quit",
+        "chart",
+        "ta",
         "finbrain",
     ]
 
-    PAPRIKA_CHOICES = [
-        "events",
-        "twitter",
-        "ex",
-        "mkt",
-        "ta",
-        "ps",
-        "basic",
-    ]
+    SPECIFIC_CHOICES = {
+        "cp": [
+            "events",
+            "twitter",
+            "ex",
+            "mkt",
+            "ps",
+            "basic",
+        ],
+        "cg": [
+            "info",
+            "market",
+            "ath",
+            "atl",
+            "score",
+            "web",
+            "social",
+            "bc",
+            "dev",
+        ],
+        "bin": [
+            "book",
+            "balance",
+        ],
+    }
 
-    GECKO_CHOICES = [
-        "info",
-        "market",
-        "ath",
-        "atl",
-        "score",
-        "web",
-        "social",
-        "bc",
-        "dev",
-    ]
-
-    BINANCE_CHOICES = [
-        "book",
-        "candle",
-        "balance",
-    ]
-
-    def __init__(self, coin: Any = None, source: str = None):
+    def __init__(self, coin=None, source=None):
         """CONSTRUCTOR"""
 
         self._dd_parser = argparse.ArgumentParser(add_help=False, prog="dd")
@@ -66,14 +65,7 @@ class Controller:
         self.current_df = pd.DataFrame()
         self.source = source
 
-        if self.source == "cg":
-            self.CHOICES.extend(self.GECKO_CHOICES)
-
-        if self.source == "cp":
-            self.CHOICES.extend(self.PAPRIKA_CHOICES)
-
-        if self.source == "bin":
-            self.CHOICES.extend(self.BINANCE_CHOICES)
+        self.CHOICES.extend(self.SPECIFIC_CHOICES[self.source])
 
         self._dd_parser.add_argument("cmd", choices=self.CHOICES)
 
@@ -107,7 +99,7 @@ class Controller:
     def print_binance(self):
         print("Binance:")
         print("   book          show order book")
-        print("   candle        show candles")
+        print("   chart         show chart")
         print("   balance       show coin balance")
         print("")
 
@@ -246,11 +238,20 @@ class Controller:
     # binance
     def call_book(self, other_args):
         """Process book command"""
-        binance_model.order_book(other_args, self.current_coin, self.current_currency)
+        binance_model.order_book(other_args, self.current_coin)
 
-    def call_balance(self, _):
+    def call_balance(self, other_args):
         """Process balance command"""
-        binance_model.balance(self.current_coin)
+        binance_model.balance(other_args, self.current_coin)
+
+    def call_chart(self, other_args):
+        """Process view command"""
+        if self.source == "cg":
+            pycoingecko_view.chart(self.current_coin, other_args)
+        elif self.source == "bin":
+            binance_model.chart(self.current_coin, other_args)
+        elif self.source == "cp":
+            coinpaprika_view.chart(self.current_coin, other_args)
 
     # paprika
     def call_ps(self, other_args):
